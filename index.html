@@ -350,24 +350,75 @@
     .date-header .date { font-size: 16px; font-weight: 700; }
     .date-header .total { font-size: 14px; font-weight: 600; color: var(--accent); }
 
-    /* ===== Delete button ===== */
-    .session-card-wrapper {
-      position: relative;
-    }
-    .delete-btn {
+    /* ===== Session delete ===== */
+    .session-card { position: relative; }
+    .session-delete {
       position: absolute;
-      right: 24px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: var(--stopped);
+      right: 8px;
+      top: 8px;
+      background: none;
       border: none;
-      color: #fff;
-      font-size: 12px;
-      padding: 6px 12px;
-      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 16px;
       cursor: pointer;
-      display: none;
+      padding: 4px 8px;
+      border-radius: 6px;
+      opacity: 0.5;
     }
+    .session-delete:hover { opacity: 1; color: var(--stopped); }
+
+    /* ===== Reset button ===== */
+    .reset-section {
+      margin: 24px 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .btn-reset {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--stopped);
+      background: none;
+      color: var(--stopped);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-reset:active { background: var(--stopped); color: #fff; }
+
+    /* ===== Confirm modal ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: var(--bg-secondary);
+      border-radius: 16px;
+      padding: 24px;
+      width: 280px;
+      text-align: center;
+    }
+    .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .modal-msg { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }
+    .modal-buttons { display: flex; gap: 10px; }
+    .modal-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .modal-cancel { background: var(--bg-tertiary); color: var(--text-primary); }
+    .modal-confirm { background: var(--stopped); color: #fff; }
   </style>
 </head>
 <body>
@@ -418,6 +469,10 @@
         <div class="msg">아직 기록이 없어요</div>
         <div class="sub">타이머를 시작해보세요!</div>
       </div>
+
+      <div class="reset-section" id="todayResetSection" style="display:none">
+        <button class="btn-reset" onclick="showResetModal('today')">오늘 기록 초기화</button>
+      </div>
     </div>
   </div>
 
@@ -457,6 +512,22 @@
         <div class="icon">📅</div>
         <div class="msg">기록이 없어요</div>
         <div class="sub">공부를 시작하면 여기에 기록됩니다</div>
+      </div>
+
+      <div class="reset-section" id="historyResetSection" style="display:none">
+        <button class="btn-reset" onclick="showResetModal('all')">전체 기록 초기화</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div class="modal-overlay" id="resetModal">
+    <div class="modal">
+      <div class="modal-title" id="modalTitle">기록 초기화</div>
+      <div class="modal-msg" id="modalMsg">정말 삭제할까요? 되돌릴 수 없습니다.</div>
+      <div class="modal-buttons">
+        <button class="modal-btn modal-cancel" onclick="closeResetModal()">취소</button>
+        <button class="modal-btn modal-confirm" id="modalConfirm">삭제</button>
       </div>
     </div>
   </div>
@@ -696,7 +767,8 @@
       miniTotal.textContent = total > 0 ? formatShort(total) : '0분';
     }
 
-    function renderSessionCard(session) {
+    function renderSessionCard(session, showDelete = false) {
+      const date = session.startedAt.split('T')[0];
       return `<div class="session-card" data-id="${session.id}">
         <div class="session-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -706,7 +778,16 @@
           <div class="session-time">${formatTime(session.startedAt)} - ${formatTime(session.endedAt)}</div>
         </div>
         <div class="session-duration">${formatShort(session.durationMs)}</div>
+        <button class="session-delete" onclick="onDeleteSession('${date}','${session.id}')" title="삭제">✕</button>
       </div>`;
+    }
+
+    function onDeleteSession(date, sessionId) {
+      if (!confirm('이 세션을 삭제할까요?')) return;
+      deleteSession(date, sessionId);
+      updateUI();
+      updateTodayScreen();
+      updateHistoryScreen();
     }
 
     function updateTodayScreen() {
@@ -720,10 +801,12 @@
         $('todaySessionCount').textContent = '';
         $('todayList').innerHTML = '';
         $('todayEmpty').style.display = '';
+        $('todayResetSection').style.display = 'none';
       } else {
         $('todaySessionCount').textContent = `오늘의 세션 (${sessions.length}개)`;
         $('todayList').innerHTML = sessions.map(renderSessionCard).join('');
         $('todayEmpty').style.display = 'none';
+        $('todayResetSection').style.display = '';
       }
     }
 
@@ -828,10 +911,12 @@
         $('historyList').innerHTML = '';
         $('historyEmpty').style.display = '';
         $('historyDetailTitle').style.display = 'none';
+        $('historyResetSection').style.display = 'none';
         return;
       }
       $('historyEmpty').style.display = 'none';
       $('historyDetailTitle').style.display = '';
+      $('historyResetSection').style.display = '';
       let html = '';
       for (const date of allDates) {
         const rec = load(KEYS.daily(date));
@@ -845,6 +930,47 @@
       }
       $('historyList').innerHTML = html;
     }
+
+    // ===== Reset Functions =====
+    let pendingResetType = null;
+
+    function showResetModal(type) {
+      pendingResetType = type;
+      if (type === 'today') {
+        $('modalTitle').textContent = '오늘 기록 초기화';
+        $('modalMsg').textContent = '오늘의 모든 공부 기록이 삭제됩니다. 되돌릴 수 없습니다.';
+      } else {
+        $('modalTitle').textContent = '전체 기록 초기화';
+        $('modalMsg').textContent = '모든 날짜의 공부 기록이 삭제됩니다. 되돌릴 수 없습니다.';
+      }
+      $('resetModal').classList.add('show');
+    }
+
+    function closeResetModal() {
+      $('resetModal').classList.remove('show');
+      pendingResetType = null;
+    }
+
+    $('modalConfirm').addEventListener('click', () => {
+      if (pendingResetType === 'today') {
+        const today = todayStr();
+        localStorage.removeItem(KEYS.daily(today));
+        const dates = (load(KEYS.ALL_DATES) || []).filter(d => d !== today);
+        save(KEYS.ALL_DATES, dates);
+      } else if (pendingResetType === 'all') {
+        const dates = load(KEYS.ALL_DATES) || [];
+        for (const d of dates) localStorage.removeItem(KEYS.daily(d));
+        localStorage.removeItem(KEYS.ALL_DATES);
+      }
+      closeResetModal();
+      updateUI();
+      updateTodayScreen();
+      updateHistoryScreen();
+    });
+
+    $('resetModal').addEventListener('click', (e) => {
+      if (e.target === $('resetModal')) closeResetModal();
+    });
 
     // ===== Tab Navigation =====
     const tabs = document.querySelectorAll('.tab');
