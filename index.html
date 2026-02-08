@@ -452,7 +452,7 @@
         <span class="label">오늘 총 공부</span>
         <span class="value" id="miniTotal">0분</span>
       </div>
-      <div style="margin-top:16px;font-size:11px;color:#555;">v6.0</div>
+      <div style="margin-top:16px;font-size:11px;color:#555;">v6.1</div>
     </div>
   </div>
 
@@ -908,15 +908,23 @@
 
       // 막대 그래프
       const maxMs = Math.max(...dailyData.map(d => d.ms), 1);
+      const totalBars = dailyData.length;
+      // 라벨 간격: 7개 이하면 전부 표시, 그 이상이면 5일 간격
+      const labelStep = totalBars <= 7 ? 1 : 5;
       let chartHtml = '';
-      for (const d of dailyData) {
+      for (let i = 0; i < dailyData.length; i++) {
+        const d = dailyData[i];
         const heightPct = (d.ms / maxMs) * 100;
         const isToday = d.date === todayDate;
         const valueLabel = d.ms > 0 ? formatHours(d.ms) : '';
+        // 첫날, 마지막날, 오늘, 그리고 간격에 맞는 날만 라벨 표시
+        const dayNum = new Date(d.date + 'T00:00:00').getDate();
+        const showLabel = totalBars <= 7 || dayNum === 1 || i === totalBars - 1 || isToday || dayNum % labelStep === 0;
+        const label = showLabel ? getShortLabel(d.date, currentStatsView) : '';
         chartHtml += `<div class="chart-bar-wrap">
           <div class="chart-bar-value">${valueLabel}</div>
           <div class="chart-bar ${isToday ? 'today-bar' : ''}" style="height: ${Math.max(heightPct, d.ms > 0 ? 3 : 0)}%"></div>
-          <div class="chart-bar-label">${getShortLabel(d.date, currentStatsView)}</div>
+          <div class="chart-bar-label">${label}</div>
         </div>`;
       }
       $('chartBars').innerHTML = chartHtml;
