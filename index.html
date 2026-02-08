@@ -652,16 +652,22 @@
 
     function stopTimer() {
       const elapsed = computeElapsed();
-      if (elapsed > 0 && state.sessionStartedAt) {
+      const taskName = state.taskName;
+      const sessionStart = state.sessionStartedAt;
+
+      // 먼저 세션 저장
+      if (elapsed > 0 && sessionStart) {
         const session = {
           id: Date.now().toString(),
-          taskName: state.taskName,
-          startedAt: state.sessionStartedAt,
+          taskName: taskName,
+          startedAt: sessionStart,
           endedAt: new Date().toISOString(),
           durationMs: elapsed,
         };
         saveSession(session);
       }
+
+      // 그 다음 상태 초기화
       state = { ...DEFAULT_STATE };
       persistState();
       stopTick();
@@ -685,18 +691,22 @@
 
     // ===== Session Storage =====
     function saveSession(session) {
-      const date = session.startedAt.split('T')[0];
-      const key = KEYS.daily(date);
-      const record = load(key) || { date, sessions: [], totalDurationMs: 0 };
-      record.sessions.push(session);
-      record.totalDurationMs += session.durationMs;
-      save(key, record);
+      try {
+        const date = session.startedAt.split('T')[0];
+        const key = KEYS.daily(date);
+        const record = load(key) || { date: date, sessions: [], totalDurationMs: 0 };
+        record.sessions.push(session);
+        record.totalDurationMs += session.durationMs;
+        save(key, record);
 
-      const dates = load(KEYS.ALL_DATES) || [];
-      if (!dates.includes(date)) {
-        dates.push(date);
-        dates.sort().reverse();
-        save(KEYS.ALL_DATES, dates);
+        const dates = load(KEYS.ALL_DATES) || [];
+        if (!dates.includes(date)) {
+          dates.push(date);
+          dates.sort().reverse();
+          save(KEYS.ALL_DATES, dates);
+        }
+      } catch (e) {
+        alert('저장 오류: ' + e.message);
       }
     }
 
