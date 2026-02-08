@@ -452,6 +452,7 @@
         <span class="label">오늘 총 공부</span>
         <span class="value" id="miniTotal">0분</span>
       </div>
+      <div style="margin-top:16px;font-size:11px;color:#555;">v5.0</div>
     </div>
   </div>
 
@@ -656,6 +657,7 @@
       const sessionStart = state.sessionStartedAt;
 
       // 먼저 세션 저장
+      let saved = false;
       if (elapsed > 0 && sessionStart) {
         const session = {
           id: Date.now().toString(),
@@ -665,6 +667,7 @@
           durationMs: elapsed,
         };
         saveSession(session);
+        saved = true;
       }
 
       // 그 다음 상태 초기화
@@ -675,6 +678,12 @@
       updateUI();
       updateTodayScreen();
       updateHistoryScreen();
+
+      // 저장 확인 피드백 (디버그용 - 나중에 제거 가능)
+      if (saved) {
+        const rec = getTodayRecord();
+        console.log('[v5] 세션 저장 완료:', taskName, formatShort(elapsed), '/ 오늘 총:', rec.sessions.length, '개');
+      }
     }
 
     function startTick() {
@@ -1027,9 +1036,12 @@
     updateUI();
     if (state.status === 'running') startTick();
 
-    // Service Worker registration
+    // Service Worker 완전 제거 (캐시 문제 해결)
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
+      navigator.serviceWorker.getRegistrations().then(regs => {
+        regs.forEach(r => r.unregister());
+      });
+      caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
     }
   </script>
 </body>
