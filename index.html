@@ -372,11 +372,13 @@
       return `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
     }
     function formatShort(ms) {
-      const m = Math.floor(ms / 60000);
-      const h = Math.floor(m / 60);
-      const rm = m % 60;
-      if (h > 0) return `${h}시간 ${rm}분`;
-      return `${m}분`;
+      const totalSeconds = Math.floor(ms / 1000);
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      if (h > 0) return `${h}시간 ${m}분`;
+      if (m > 0) return `${m}분 ${s}초`;
+      return `${s}초`;
     }
     function formatTime(iso) {
       const d = new Date(iso);
@@ -465,6 +467,8 @@
       stopTick();
       taskInput.value = '';
       updateUI();
+      updateTodayScreen();
+      updateHistoryScreen();
     }
 
     function startTick() {
