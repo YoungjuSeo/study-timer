@@ -452,7 +452,7 @@
         <span class="label">오늘 총 공부</span>
         <span class="value" id="miniTotal">0분</span>
       </div>
-      <div style="margin-top:16px;font-size:11px;color:#555;">v5.0</div>
+      <div style="margin-top:16px;font-size:11px;color:#555;">v5.1</div>
     </div>
   </div>
 
@@ -655,6 +655,10 @@
       const elapsed = computeElapsed();
       const taskName = state.taskName;
       const sessionStart = state.sessionStartedAt;
+      const currentStatus = state.status;
+
+      // 디버그: 상태 확인 (v5.1)
+      alert('[디버그] 종료 시점\nstatus: ' + currentStatus + '\ntaskName: ' + taskName + '\nelapsed: ' + elapsed + 'ms\nsessionStart: ' + sessionStart);
 
       // 먼저 세션 저장
       let saved = false;
@@ -668,6 +672,9 @@
         };
         saveSession(session);
         saved = true;
+        alert('[디버그] 저장 완료! ' + taskName + ' / ' + formatShort(elapsed));
+      } else {
+        alert('[디버그] 저장 안됨! elapsed=' + elapsed + ', sessionStart=' + sessionStart);
       }
 
       // 그 다음 상태 초기화
@@ -678,12 +685,6 @@
       updateUI();
       updateTodayScreen();
       updateHistoryScreen();
-
-      // 저장 확인 피드백 (디버그용 - 나중에 제거 가능)
-      if (saved) {
-        const rec = getTodayRecord();
-        console.log('[v5] 세션 저장 완료:', taskName, formatShort(elapsed), '/ 오늘 총:', rec.sessions.length, '개');
-      }
     }
 
     function startTick() {
