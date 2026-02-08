@@ -1,36 +1,38 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="공부 타이머">
-  <meta name="theme-color" content="#0F0F1A">
+  <meta name="apple-mobile-web-app-title" content="True North">
+  <meta name="theme-color" content="#0A0A12">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
-  <title>공부 타이머</title>
+  <title>True North</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
     :root {
-      --bg-primary: #0F0F1A;
-      --bg-secondary: #1A1A2E;
-      --bg-tertiary: #16213E;
-      --accent: #6C63FF;
-      --accent-light: #8B83FF;
-      --running: #00C9A7;
-      --paused: #FFB800;
-      --stopped: #FF6B6B;
-      --text-primary: #E8E8E8;
-      --text-secondary: #A0A0B0;
-      --border: #2A2A40;
+      --bg-primary: #0A0A12;
+      --bg-secondary: #141420;
+      --bg-tertiary: #1C1C2E;
+      --accent: #7C6FFF;
+      --accent-glow: rgba(124, 111, 255, 0.15);
+      --running: #34D1A0;
+      --running-glow: rgba(52, 209, 160, 0.12);
+      --paused: #F5C542;
+      --stopped: #F06B6B;
+      --text-primary: #EAEAF0;
+      --text-secondary: #6E6E82;
+      --text-tertiary: #3E3E52;
+      --border: #1E1E30;
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
       background: var(--bg-primary);
       color: var(--text-primary);
       min-height: 100dvh;
@@ -39,13 +41,30 @@
       overflow: hidden;
     }
 
+    /* ===== Brand Header ===== */
+    .brand-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: calc(var(--safe-top) + 12px) 24px 10px;
+      z-index: 50;
+      background: linear-gradient(to bottom, var(--bg-primary) 60%, transparent);
+    }
+    .brand-name {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--text-primary);
+    }
+
     /* ===== Tab Screens ===== */
     .screen {
       display: none;
       flex: 1;
       flex-direction: column;
       overflow-y: auto;
-      padding-top: calc(var(--safe-top) + 12px);
+      padding-top: calc(var(--safe-top) + 52px);
       padding-bottom: 100px;
     }
     .screen.active { display: flex; }
@@ -69,14 +88,17 @@
       align-items: center;
       padding: 10px 0 8px;
       color: var(--text-secondary);
-      font-size: 11px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
       cursor: pointer;
       transition: color 0.2s;
       border: none;
       background: none;
     }
     .tab.active { color: var(--accent); }
-    .tab svg { width: 24px; height: 24px; margin-bottom: 2px; }
+    .tab svg { width: 22px; height: 22px; margin-bottom: 3px; }
 
     /* ===== Timer Screen ===== */
     .timer-screen {
@@ -90,50 +112,63 @@
 
     .task-input {
       width: 100%;
-      max-width: 340px;
-      font-size: 18px;
+      max-width: 320px;
+      font-size: 16px;
       color: var(--text-primary);
       background: var(--bg-secondary);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 20px;
+      border-radius: 14px;
+      padding: 15px 20px;
       text-align: center;
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      letter-spacing: 0.3px;
     }
-    .task-input:focus { border-color: var(--accent); }
-    .task-input::placeholder { color: var(--text-secondary); }
+    .task-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    .task-input::placeholder { color: var(--text-tertiary); font-weight: 400; }
 
     .task-label {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 600;
       color: var(--text-primary);
       margin-bottom: 4px;
+      letter-spacing: 0.3px;
     }
 
     .timer-display {
-      font-size: 64px;
-      font-weight: 300;
+      font-size: 60px;
+      font-weight: 200;
       font-variant-numeric: tabular-nums;
-      letter-spacing: 2px;
-      margin: 28px 0;
-      transition: color 0.3s;
+      letter-spacing: 3px;
+      margin: 32px 0;
+      transition: color 0.3s, text-shadow 0.3s;
     }
-    .timer-display.running { color: var(--running); }
-    .timer-display.paused { color: var(--paused); animation: pulse 1.5s ease-in-out infinite; }
-    .timer-display.idle { color: var(--text-primary); opacity: 0.4; }
+    .timer-display.running {
+      color: var(--running);
+      text-shadow: 0 0 40px var(--running-glow);
+    }
+    .timer-display.paused {
+      color: var(--paused);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .timer-display.idle { color: var(--text-tertiary); }
 
     @keyframes pulse {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      50% { opacity: 0.4; }
     }
 
     .paused-label {
-      font-size: 14px;
+      font-size: 12px;
       color: var(--paused);
-      font-weight: 500;
-      margin-top: -16px;
-      margin-bottom: 16px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-top: -20px;
+      margin-bottom: 20px;
     }
 
     .controls {
@@ -146,37 +181,39 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      padding: 14px 32px;
+      gap: 6px;
+      padding: 14px 28px;
       border-radius: 14px;
       border: none;
-      font-size: 17px;
+      font-size: 15px;
       font-weight: 600;
       color: #fff;
       cursor: pointer;
-      min-width: 130px;
+      min-width: 120px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
       transition: transform 0.1s, opacity 0.2s;
     }
     .btn:active { transform: scale(0.96); }
-    .btn:disabled { opacity: 0.35; cursor: default; }
+    .btn:disabled { opacity: 0.25; cursor: default; }
     .btn-start { background: var(--accent); min-width: 180px; }
-    .btn-pause { background: var(--paused); }
+    .btn-pause { background: var(--paused); color: #1a1a1a; }
     .btn-resume { background: var(--running); }
     .btn-stop { background: var(--stopped); }
 
     .daily-banner {
       width: 100%;
-      max-width: 340px;
+      max-width: 320px;
       background: var(--bg-secondary);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 12px 20px;
+      border-radius: 14px;
+      padding: 14px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 32px;
+      margin-top: 36px;
     }
-    .daily-banner .label { font-size: 14px; color: var(--text-secondary); }
+    .daily-banner .label { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
     .daily-banner .value { font-size: 16px; font-weight: 700; color: var(--accent); }
 
     /* ===== Today Screen ===== */
@@ -185,21 +222,23 @@
     .total-banner-large {
       background: var(--bg-secondary);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px 24px;
+      border-radius: 16px;
+      padding: 22px 24px;
       margin: 0 20px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    .total-banner-large .label { font-size: 17px; color: var(--text-secondary); }
+    .total-banner-large .label { font-size: 15px; color: var(--text-secondary); font-weight: 500; }
     .total-banner-large .value { font-size: 24px; font-weight: 700; color: var(--accent); }
 
     .section-title {
-      font-size: 14px;
+      font-size: 12px;
       color: var(--text-secondary);
       font-weight: 600;
-      padding: 4px 24px 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 8px 24px 12px;
     }
 
     .session-card {
@@ -207,9 +246,10 @@
       align-items: center;
       background: var(--bg-secondary);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 14px 16px;
       margin: 0 20px 8px;
+      position: relative;
     }
     .session-icon {
       width: 36px;
@@ -222,20 +262,20 @@
       margin-right: 12px;
       flex-shrink: 0;
     }
-    .session-icon svg { width: 18px; height: 18px; color: var(--accent); }
+    .session-icon svg { width: 16px; height: 16px; color: var(--accent); }
     .session-info { flex: 1; }
-    .session-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
-    .session-time { font-size: 12px; color: var(--text-secondary); }
-    .session-duration { font-size: 15px; font-weight: 700; color: var(--accent); margin-left: 12px; }
+    .session-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; letter-spacing: 0.2px; }
+    .session-time { font-size: 11px; color: var(--text-secondary); }
+    .session-duration { font-size: 14px; font-weight: 700; color: var(--accent); margin-left: 12px; }
 
     .empty-state {
       text-align: center;
       padding-top: 60px;
       color: var(--text-secondary);
     }
-    .empty-state .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
-    .empty-state .msg { font-size: 16px; margin-bottom: 4px; }
-    .empty-state .sub { font-size: 13px; opacity: 0.7; }
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+    .empty-state .msg { font-size: 15px; margin-bottom: 4px; font-weight: 500; }
+    .empty-state .sub { font-size: 12px; color: var(--text-tertiary); }
 
     /* ===== History Screen ===== */
     .history-screen { padding: 16px 0; }
@@ -244,19 +284,20 @@
       display: flex;
       margin: 0 20px 16px;
       background: var(--bg-secondary);
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 3px;
       border: 1px solid var(--border);
     }
     .stats-toggle button {
       flex: 1;
-      padding: 8px;
+      padding: 9px;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       background: none;
       color: var(--text-secondary);
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
+      letter-spacing: 0.3px;
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -274,32 +315,34 @@
       flex: 1;
       background: var(--bg-secondary);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px;
+      border-radius: 14px;
+      padding: 16px;
       text-align: center;
     }
-    .stat-card .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+    .stat-card .stat-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 500; }
     .stat-card .stat-value { font-size: 20px; font-weight: 700; color: var(--accent); }
-    .stat-card .stat-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+    .stat-card .stat-sub { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
 
     .chart-container {
       margin: 0 20px 16px;
       background: var(--bg-secondary);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px 12px 12px;
+      border-radius: 16px;
+      padding: 18px 14px 14px;
     }
     .chart-title {
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 600;
       color: var(--text-secondary);
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       padding-left: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
     }
     .chart {
       display: flex;
       align-items: flex-end;
-      gap: 4px;
+      gap: 3px;
       height: 120px;
       padding-bottom: 24px;
       position: relative;
@@ -314,31 +357,37 @@
     }
     .chart-bar {
       width: 100%;
-      max-width: 32px;
+      max-width: 28px;
       border-radius: 6px 6px 2px 2px;
       background: var(--accent);
       min-height: 2px;
       transition: height 0.3s ease;
       position: relative;
     }
-    .chart-bar.today-bar { background: var(--running); }
+    .chart-bar.today-bar {
+      background: var(--running);
+      box-shadow: 0 0 12px var(--running-glow);
+    }
     .chart-bar-value {
-      font-size: 9px;
+      font-size: 8px;
       color: var(--text-secondary);
       margin-bottom: 4px;
       white-space: nowrap;
     }
     .chart-bar-label {
-      font-size: 10px;
-      color: var(--text-secondary);
+      font-size: 9px;
+      color: var(--text-tertiary);
       margin-top: 6px;
+      font-weight: 500;
     }
 
     .history-section-title {
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 600;
       color: var(--text-secondary);
       padding: 8px 24px 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
     }
 
     .date-header {
@@ -347,23 +396,23 @@
       align-items: center;
       padding: 16px 24px 10px;
     }
-    .date-header .date { font-size: 16px; font-weight: 700; }
+    .date-header .date { font-size: 15px; font-weight: 700; letter-spacing: 0.2px; }
     .date-header .total { font-size: 14px; font-weight: 600; color: var(--accent); }
 
     /* ===== Session delete ===== */
-    .session-card { position: relative; }
     .session-delete {
       position: absolute;
       right: 8px;
       top: 8px;
       background: none;
       border: none;
-      color: var(--text-secondary);
-      font-size: 16px;
+      color: var(--text-tertiary);
+      font-size: 14px;
       cursor: pointer;
       padding: 4px 8px;
       border-radius: 6px;
-      opacity: 0.5;
+      opacity: 0.6;
+      transition: opacity 0.2s, color 0.2s;
     }
     .session-delete:hover { opacity: 1; color: var(--stopped); }
 
@@ -375,13 +424,14 @@
     }
     .btn-reset {
       width: 100%;
-      padding: 14px;
+      padding: 13px;
       border-radius: 12px;
-      border: 1px solid var(--stopped);
+      border: 1px solid rgba(240, 107, 107, 0.3);
       background: none;
       color: var(--stopped);
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 600;
+      letter-spacing: 0.5px;
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -392,67 +442,85 @@
       display: none;
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.75);
       z-index: 200;
       align-items: center;
       justify-content: center;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
     }
     .modal-overlay.show { display: flex; }
     .modal {
       background: var(--bg-secondary);
-      border-radius: 16px;
-      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 24px 24px;
       width: 280px;
       text-align: center;
     }
     .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
-    .modal-msg { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }
+    .modal-msg { font-size: 13px; color: var(--text-secondary); margin-bottom: 22px; line-height: 1.5; }
     .modal-buttons { display: flex; gap: 10px; }
     .modal-btn {
       flex: 1;
       padding: 12px;
-      border-radius: 10px;
+      border-radius: 12px;
       border: none;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
+      letter-spacing: 0.3px;
     }
     .modal-cancel { background: var(--bg-tertiary); color: var(--text-primary); }
     .modal-confirm { background: var(--stopped); color: #fff; }
+
+    /* ===== Version ===== */
+    .version-tag {
+      margin-top: 20px;
+      font-size: 10px;
+      color: var(--text-tertiary);
+      letter-spacing: 1px;
+      opacity: 0.4;
+    }
   </style>
 </head>
 <body>
+
+  <!-- Brand Header -->
+  <div class="brand-header">
+    <div class="brand-name">TRUE NORTH</div>
+  </div>
 
   <!-- Timer Screen -->
   <div id="screen-timer" class="screen active">
     <div class="timer-screen">
       <div id="task-input-area">
-        <input type="text" id="taskInput" class="task-input" placeholder="무엇을 공부할까요?" autocomplete="off">
+        <input type="text" id="taskInput" class="task-input" placeholder="What are you working on?" autocomplete="off">
       </div>
       <div id="task-label-area" style="display:none">
         <div class="task-label" id="taskLabel"></div>
       </div>
 
       <div id="timerDisplay" class="timer-display idle">00:00:00</div>
-      <div id="pausedLabel" class="paused-label" style="display:none">일시정지</div>
+      <div id="pausedLabel" class="paused-label" style="display:none">Paused</div>
 
       <div class="controls" id="controls-idle">
-        <button class="btn btn-start" id="btnStart" disabled>▶ 시작</button>
+        <button class="btn btn-start" id="btnStart" disabled>Start</button>
       </div>
       <div class="controls" id="controls-running" style="display:none">
-        <button class="btn btn-pause" id="btnPause">⏸ 일시정지</button>
-        <button class="btn btn-stop" id="btnStop1">⏹ 종료</button>
+        <button class="btn btn-pause" id="btnPause">Pause</button>
+        <button class="btn btn-stop" id="btnStop1">Stop</button>
       </div>
       <div class="controls" id="controls-paused" style="display:none">
-        <button class="btn btn-resume" id="btnResume">▶ 재개</button>
-        <button class="btn btn-stop" id="btnStop2">⏹ 종료</button>
+        <button class="btn btn-resume" id="btnResume">Resume</button>
+        <button class="btn btn-stop" id="btnStop2">Stop</button>
       </div>
 
       <div class="daily-banner">
-        <span class="label">오늘 총 공부</span>
-        <span class="value" id="miniTotal">0분</span>
+        <span class="label">Today's Total</span>
+        <span class="value" id="miniTotal">0m</span>
       </div>
-      <div style="margin-top:16px;font-size:11px;color:#555;">v6.1</div>
+      <div class="version-tag">v7.0</div>
     </div>
   </div>
 
@@ -460,19 +528,19 @@
   <div id="screen-today" class="screen">
     <div class="today-screen">
       <div class="total-banner-large">
-        <span class="label">오늘 총 공부</span>
-        <span class="value" id="todayTotal">0분</span>
+        <span class="label">Today's Total</span>
+        <span class="value" id="todayTotal">0m</span>
       </div>
       <div id="todaySessionCount" class="section-title"></div>
       <div id="todayList"></div>
       <div id="todayEmpty" class="empty-state" style="display:none">
-        <div class="icon">📚</div>
-        <div class="msg">아직 기록이 없어요</div>
-        <div class="sub">타이머를 시작해보세요!</div>
+        <div class="icon">◎</div>
+        <div class="msg">No sessions yet</div>
+        <div class="sub">Start your first session today</div>
       </div>
 
       <div class="reset-section" id="todayResetSection" style="display:none">
-        <button class="btn-reset" onclick="showResetModal('today')">오늘 기록 초기화</button>
+        <button class="btn-reset" onclick="showResetModal('today')">Reset Today</button>
       </div>
     </div>
   </div>
@@ -480,43 +548,39 @@
   <!-- History Screen -->
   <div id="screen-history" class="screen">
     <div class="history-screen">
-      <!-- 주간/월간 토글 -->
       <div class="stats-toggle">
-        <button id="toggleWeek" class="active" onclick="setStatsView('week')">이번 주</button>
-        <button id="toggleMonth" onclick="setStatsView('month')">이번 달</button>
+        <button id="toggleWeek" class="active" onclick="setStatsView('week')">Weekly</button>
+        <button id="toggleMonth" onclick="setStatsView('month')">Monthly</button>
       </div>
 
-      <!-- 통계 카드 -->
       <div class="stats-summary">
         <div class="stat-card">
-          <div class="stat-label" id="statPeriodLabel">이번 주 총</div>
-          <div class="stat-value" id="statTotal">0분</div>
-          <div class="stat-sub" id="statDays">0일 공부</div>
+          <div class="stat-label" id="statPeriodLabel">This Week</div>
+          <div class="stat-value" id="statTotal">0m</div>
+          <div class="stat-sub" id="statDays">0 days</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">일 평균</div>
-          <div class="stat-value" id="statAvg">0분</div>
-          <div class="stat-sub" id="statSessions">0개 세션</div>
+          <div class="stat-label">Daily Avg</div>
+          <div class="stat-value" id="statAvg">0m</div>
+          <div class="stat-sub" id="statSessions">0 sessions</div>
         </div>
       </div>
 
-      <!-- 막대 그래프 -->
       <div class="chart-container">
-        <div class="chart-title" id="chartTitle">일별 공부 시간</div>
+        <div class="chart-title" id="chartTitle">Daily Breakdown</div>
         <div class="chart" id="chartBars"></div>
       </div>
 
-      <!-- 날짜별 기록 -->
-      <div class="history-section-title" id="historyDetailTitle">상세 기록</div>
+      <div class="history-section-title" id="historyDetailTitle">All Records</div>
       <div id="historyList"></div>
       <div id="historyEmpty" class="empty-state" style="display:none">
-        <div class="icon">📅</div>
-        <div class="msg">기록이 없어요</div>
-        <div class="sub">공부를 시작하면 여기에 기록됩니다</div>
+        <div class="icon">◎</div>
+        <div class="msg">No records yet</div>
+        <div class="sub">Your history will appear here</div>
       </div>
 
       <div class="reset-section" id="historyResetSection" style="display:none">
-        <button class="btn-reset" onclick="showResetModal('all')">전체 기록 초기화</button>
+        <button class="btn-reset" onclick="showResetModal('all')">Reset All Records</button>
       </div>
     </div>
   </div>
@@ -524,11 +588,11 @@
   <!-- Confirm Modal -->
   <div class="modal-overlay" id="resetModal">
     <div class="modal">
-      <div class="modal-title" id="modalTitle">기록 초기화</div>
-      <div class="modal-msg" id="modalMsg">정말 삭제할까요? 되돌릴 수 없습니다.</div>
+      <div class="modal-title" id="modalTitle">Reset Data</div>
+      <div class="modal-msg" id="modalMsg">This action cannot be undone.</div>
       <div class="modal-buttons">
-        <button class="modal-btn modal-cancel" onclick="closeResetModal()">취소</button>
-        <button class="modal-btn modal-confirm" id="modalConfirm">삭제</button>
+        <button class="modal-btn modal-cancel" onclick="closeResetModal()">Cancel</button>
+        <button class="modal-btn modal-confirm" id="modalConfirm">Delete</button>
       </div>
     </div>
   </div>
@@ -539,19 +603,19 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
       </svg>
-      타이머
+      Timer
     </button>
     <button class="tab" data-screen="today">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>
       </svg>
-      오늘
+      Today
     </button>
     <button class="tab" data-screen="history">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
       </svg>
-      기록
+      History
     </button>
   </nav>
 
@@ -577,9 +641,9 @@
       const h = Math.floor(totalSeconds / 3600);
       const m = Math.floor((totalSeconds % 3600) / 60);
       const s = totalSeconds % 60;
-      if (h > 0) return `${h}시간 ${m}분`;
-      if (m > 0) return `${m}분 ${s}초`;
-      return `${s}초`;
+      if (h > 0) return `${h}h ${m}m`;
+      if (m > 0) return `${m}m ${s}s`;
+      return `${s}s`;
     }
     function formatTime(iso) {
       const d = new Date(iso);
@@ -591,8 +655,9 @@
     }
     function formatDateHeader(ds) {
       const d = new Date(ds + 'T00:00:00');
-      const weekdays = ['일','월','화','수','목','금','토'];
-      return `${d.getMonth()+1}월 ${d.getDate()}일 (${weekdays[d.getDay()]})`;
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const weekdays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      return `${months[d.getMonth()]} ${d.getDate()} (${weekdays[d.getDay()]})`;
     }
 
     // ===== State =====
@@ -656,7 +721,6 @@
       const taskName = state.taskName;
       const sessionStart = state.sessionStartedAt;
 
-      // 세션 저장
       if (elapsed > 0 && sessionStart) {
         const session = {
           id: Date.now().toString(),
@@ -668,7 +732,6 @@
         saveSession(session);
       }
 
-      // 상태 초기화
       state = { ...DEFAULT_STATE };
       persistState();
       stopTick();
@@ -712,7 +775,7 @@
           save(KEYS.ALL_DATES, dates);
         }
       } catch (e) {
-        alert('저장 오류: ' + e.message);
+        alert('Save error: ' + e.message);
       }
     }
 
@@ -742,7 +805,6 @@
 
     // ===== UI Update =====
     function updateUI() {
-      // Timer screen
       if (state.status === 'idle') {
         taskInputArea.style.display = '';
         taskLabelArea.style.display = 'none';
@@ -780,26 +842,26 @@
       const rec = getTodayRecord();
       let total = rec.totalDurationMs;
       if (state.status !== 'idle') total += computeElapsed();
-      miniTotal.textContent = total > 0 ? formatShort(total) : '0분';
+      miniTotal.textContent = total > 0 ? formatShort(total) : '0m';
     }
 
-    function renderSessionCard(session, showDelete = false) {
+    function renderSessionCard(session) {
       const date = localDateStr(session.startedAt);
       return `<div class="session-card" data-id="${session.id}">
         <div class="session-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </div>
         <div class="session-info">
           <div class="session-name">${session.taskName}</div>
-          <div class="session-time">${formatTime(session.startedAt)} - ${formatTime(session.endedAt)}</div>
+          <div class="session-time">${formatTime(session.startedAt)} – ${formatTime(session.endedAt)}</div>
         </div>
         <div class="session-duration">${formatShort(session.durationMs)}</div>
-        <button class="session-delete" onclick="onDeleteSession('${date}','${session.id}')" title="삭제">✕</button>
+        <button class="session-delete" onclick="onDeleteSession('${date}','${session.id}')" title="Delete">✕</button>
       </div>`;
     }
 
     function onDeleteSession(date, sessionId) {
-      if (!confirm('이 세션을 삭제할까요?')) return;
+      if (!confirm('Delete this session?')) return;
       deleteSession(date, sessionId);
       updateUI();
       updateTodayScreen();
@@ -810,7 +872,7 @@
       const rec = getTodayRecord();
       let total = rec.totalDurationMs;
       if (state.status !== 'idle') total += computeElapsed();
-      $('todayTotal').textContent = total > 0 ? formatShort(total) : '0분';
+      $('todayTotal').textContent = total > 0 ? formatShort(total) : '0m';
 
       const sessions = [...rec.sessions].reverse();
       if (sessions.length === 0) {
@@ -819,7 +881,7 @@
         $('todayEmpty').style.display = '';
         $('todayResetSection').style.display = 'none';
       } else {
-        $('todaySessionCount').textContent = `오늘의 세션 (${sessions.length}개)`;
+        $('todaySessionCount').textContent = `Daily Sessions (${sessions.length})`;
         $('todayList').innerHTML = sessions.map(renderSessionCard).join('');
         $('todayEmpty').style.display = 'none';
         $('todayResetSection').style.display = '';
@@ -840,7 +902,7 @@
       const today = new Date();
       const dates = [];
       if (view === 'week') {
-        const day = today.getDay(); // 0=일 1=월...
+        const day = today.getDay();
         const monday = new Date(today);
         monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
         for (let i = 0; i < 7; i++) {
@@ -866,7 +928,7 @@
     function getShortLabel(dateStr, view) {
       const d = new Date(dateStr + 'T00:00:00');
       if (view === 'week') {
-        return ['일','월','화','수','목','금','토'][d.getDay()];
+        return ['S','M','T','W','T','F','S'][d.getDay()];
       }
       return d.getDate().toString();
     }
@@ -875,7 +937,8 @@
       const h = ms / 3600000;
       if (h >= 1) return h.toFixed(1) + 'h';
       const m = Math.floor(ms / 60000);
-      return m + 'm';
+      if (m > 0) return m + 'm';
+      return Math.floor(ms / 1000) + 's';
     }
 
     function updateHistoryScreen() {
@@ -883,7 +946,6 @@
       const rangeDates = getDateRange(currentStatsView);
       const todayDate = todayStr();
 
-      // 기간 내 데이터 수집
       let totalMs = 0;
       let totalSessions = 0;
       let studyDays = 0;
@@ -899,17 +961,15 @@
         if (ms > 0) studyDays++;
       }
 
-      // 통계 카드 업데이트
-      $('statPeriodLabel').textContent = currentStatsView === 'week' ? '이번 주 총' : '이번 달 총';
-      $('statTotal').textContent = totalMs > 0 ? formatShort(totalMs) : '0분';
-      $('statDays').textContent = `${studyDays}일 공부`;
-      $('statAvg').textContent = studyDays > 0 ? formatShort(Math.floor(totalMs / studyDays)) : '0분';
-      $('statSessions').textContent = `${totalSessions}개 세션`;
+      $('statPeriodLabel').textContent = currentStatsView === 'week' ? 'This Week' : 'This Month';
+      $('statTotal').textContent = totalMs > 0 ? formatShort(totalMs) : '0m';
+      $('statDays').textContent = `${studyDays} days`;
+      $('statAvg').textContent = studyDays > 0 ? formatShort(Math.floor(totalMs / studyDays)) : '0m';
+      $('statSessions').textContent = `${totalSessions} sessions`;
 
-      // 막대 그래프
+      // Chart
       const maxMs = Math.max(...dailyData.map(d => d.ms), 1);
       const totalBars = dailyData.length;
-      // 라벨 간격: 7개 이하면 전부 표시, 그 이상이면 5일 간격
       const labelStep = totalBars <= 7 ? 1 : 5;
       let chartHtml = '';
       for (let i = 0; i < dailyData.length; i++) {
@@ -917,7 +977,6 @@
         const heightPct = (d.ms / maxMs) * 100;
         const isToday = d.date === todayDate;
         const valueLabel = d.ms > 0 ? formatHours(d.ms) : '';
-        // 첫날, 마지막날, 오늘, 그리고 간격에 맞는 날만 라벨 표시
         const dayNum = new Date(d.date + 'T00:00:00').getDate();
         const showLabel = totalBars <= 7 || dayNum === 1 || i === totalBars - 1 || isToday || dayNum % labelStep === 0;
         const label = showLabel ? getShortLabel(d.date, currentStatsView) : '';
@@ -928,9 +987,9 @@
         </div>`;
       }
       $('chartBars').innerHTML = chartHtml;
-      $('chartTitle').textContent = currentStatsView === 'week' ? '일별 공부 시간 (이번 주)' : '일별 공부 시간 (이번 달)';
+      $('chartTitle').textContent = currentStatsView === 'week' ? 'Daily Breakdown · Week' : 'Daily Breakdown · Month';
 
-      // 상세 기록 (날짜별)
+      // Records
       if (allDates.length === 0) {
         $('historyList').innerHTML = '';
         $('historyEmpty').style.display = '';
@@ -961,11 +1020,11 @@
     function showResetModal(type) {
       pendingResetType = type;
       if (type === 'today') {
-        $('modalTitle').textContent = '오늘 기록 초기화';
-        $('modalMsg').textContent = '오늘의 모든 공부 기록이 삭제됩니다. 되돌릴 수 없습니다.';
+        $('modalTitle').textContent = 'Reset Today';
+        $('modalMsg').textContent = 'All sessions from today will be permanently deleted.';
       } else {
-        $('modalTitle').textContent = '전체 기록 초기화';
-        $('modalMsg').textContent = '모든 날짜의 공부 기록이 삭제됩니다. 되돌릴 수 없습니다.';
+        $('modalTitle').textContent = 'Reset All Records';
+        $('modalMsg').textContent = 'All records will be permanently deleted. This cannot be undone.';
       }
       $('resetModal').classList.add('show');
     }
@@ -1026,7 +1085,7 @@
     $('btnStop1').addEventListener('click', stopTimer);
     $('btnStop2').addEventListener('click', stopTimer);
 
-    // ===== Visibility Change (background/foreground) =====
+    // ===== Visibility Change =====
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && state.status === 'running') {
         timerDisplay.textContent = formatDuration(computeElapsed());
@@ -1041,7 +1100,7 @@
     updateUI();
     if (state.status === 'running') startTick();
 
-    // Service Worker 완전 제거 (캐시 문제 해결)
+    // Remove old service workers
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(regs => {
         regs.forEach(r => r.unregister());
