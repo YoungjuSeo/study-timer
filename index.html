@@ -452,7 +452,7 @@
         <span class="label">오늘 총 공부</span>
         <span class="value" id="miniTotal">0분</span>
       </div>
-      <div style="margin-top:16px;font-size:11px;color:#555;">v5.2</div>
+      <div style="margin-top:16px;font-size:11px;color:#555;">v6.0</div>
     </div>
   </div>
 
@@ -655,13 +655,8 @@
       const elapsed = computeElapsed();
       const taskName = state.taskName;
       const sessionStart = state.sessionStartedAt;
-      const currentStatus = state.status;
 
-      // 디버그: 상태 확인 (v5.1)
-      alert('[디버그] 종료 시점\nstatus: ' + currentStatus + '\ntaskName: ' + taskName + '\nelapsed: ' + elapsed + 'ms\nsessionStart: ' + sessionStart);
-
-      // 먼저 세션 저장
-      let saved = false;
+      // 세션 저장
       if (elapsed > 0 && sessionStart) {
         const session = {
           id: Date.now().toString(),
@@ -671,22 +666,9 @@
           durationMs: elapsed,
         };
         saveSession(session);
-        saved = true;
-
-        // 디버그: 저장 직후 바로 읽어보기
-        const verifyKey = KEYS.daily(sessionStart.split('T')[0]);
-        const verifyRaw = localStorage.getItem(verifyKey);
-        const verifyRec = JSON.parse(verifyRaw);
-        alert('[디버그] 저장 완료!\n' + taskName + ' / ' + formatShort(elapsed) +
-          '\n\n검증 - key: ' + verifyKey +
-          '\n세션수: ' + verifyRec.sessions.length +
-          '\ntotalMs: ' + verifyRec.totalDurationMs +
-          '\n\ntodayStr(): ' + todayStr());
-      } else {
-        alert('[디버그] 저장 안됨!\nelapsed=' + elapsed + '\nsessionStart=' + sessionStart);
       }
 
-      // 그 다음 상태 초기화
+      // 상태 초기화
       state = { ...DEFAULT_STATE };
       persistState();
       stopTick();
@@ -694,14 +676,6 @@
       updateUI();
       updateTodayScreen();
       updateHistoryScreen();
-
-      // 디버그: updateMiniTotal 이후 최종 확인
-      if (saved) {
-        const finalRec = getTodayRecord();
-        alert('[디버그] 최종 화면 업데이트 후\n오늘 세션수: ' + finalRec.sessions.length +
-          '\n오늘 totalMs: ' + finalRec.totalDurationMs +
-          '\nminiTotal 표시: ' + miniTotal.textContent);
-      }
     }
 
     function startTick() {
@@ -717,9 +691,14 @@
     }
 
     // ===== Session Storage =====
+    function localDateStr(isoStr) {
+      const d = new Date(isoStr);
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    }
+
     function saveSession(session) {
       try {
-        const date = session.startedAt.split('T')[0];
+        const date = localDateStr(session.startedAt);
         const key = KEYS.daily(date);
         const record = load(key) || { date: date, sessions: [], totalDurationMs: 0 };
         record.sessions.push(session);
@@ -805,7 +784,7 @@
     }
 
     function renderSessionCard(session, showDelete = false) {
-      const date = session.startedAt.split('T')[0];
+      const date = localDateStr(session.startedAt);
       return `<div class="session-card" data-id="${session.id}">
         <div class="session-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
