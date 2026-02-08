@@ -19,10 +19,10 @@
       --bg-tertiary: #1C1C2E;
       --accent: #7C6FFF;
       --accent-glow: rgba(124, 111, 255, 0.15);
-      --running: #34D1A0;
-      --running-glow: rgba(52, 209, 160, 0.12);
-      --paused: #F5C542;
-      --stopped: #F06B6B;
+      --running: #A8A0FF;
+      --running-glow: rgba(168, 160, 255, 0.12);
+      --paused: #7B8AB8;
+      --stopped: #9B7A7A;
       --text-primary: #EAEAF0;
       --text-secondary: #6E6E82;
       --text-tertiary: #3E3E52;
@@ -197,7 +197,7 @@
     .btn:active { transform: scale(0.96); }
     .btn:disabled { opacity: 0.25; cursor: default; }
     .btn-start { background: var(--accent); min-width: 180px; }
-    .btn-pause { background: var(--paused); color: #1a1a1a; }
+    .btn-pause { background: var(--paused); }
     .btn-resume { background: var(--running); }
     .btn-stop { background: var(--stopped); }
 
@@ -426,7 +426,7 @@
       width: 100%;
       padding: 13px;
       border-radius: 12px;
-      border: 1px solid rgba(240, 107, 107, 0.3);
+      border: 1px solid rgba(155, 122, 122, 0.4);
       background: none;
       color: var(--stopped);
       font-size: 13px;
@@ -517,10 +517,10 @@
       </div>
 
       <div class="daily-banner">
-        <span class="label">Today's Total</span>
+        <span class="label">Total</span>
         <span class="value" id="miniTotal">0m</span>
       </div>
-      <div class="version-tag">v7.0</div>
+      <div class="version-tag">v7.1</div>
     </div>
   </div>
 
@@ -528,7 +528,7 @@
   <div id="screen-today" class="screen">
     <div class="today-screen">
       <div class="total-banner-large">
-        <span class="label">Today's Total</span>
+        <span class="label">Total</span>
         <span class="value" id="todayTotal">0m</span>
       </div>
       <div id="todaySessionCount" class="section-title"></div>
@@ -970,7 +970,7 @@
       // Chart
       const maxMs = Math.max(...dailyData.map(d => d.ms), 1);
       const totalBars = dailyData.length;
-      const labelStep = totalBars <= 7 ? 1 : 5;
+      const monthLabels = [1, 7, 14, 21, 28];
       let chartHtml = '';
       for (let i = 0; i < dailyData.length; i++) {
         const d = dailyData[i];
@@ -978,7 +978,7 @@
         const isToday = d.date === todayDate;
         const valueLabel = d.ms > 0 ? formatHours(d.ms) : '';
         const dayNum = new Date(d.date + 'T00:00:00').getDate();
-        const showLabel = totalBars <= 7 || dayNum === 1 || i === totalBars - 1 || isToday || dayNum % labelStep === 0;
+        const showLabel = totalBars <= 7 || monthLabels.includes(dayNum) || i === totalBars - 1;
         const label = showLabel ? getShortLabel(d.date, currentStatsView) : '';
         chartHtml += `<div class="chart-bar-wrap">
           <div class="chart-bar-value">${valueLabel}</div>
