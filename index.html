@@ -452,7 +452,7 @@
         <span class="label">오늘 총 공부</span>
         <span class="value" id="miniTotal">0분</span>
       </div>
-      <div style="margin-top:16px;font-size:11px;color:#555;">v5.1</div>
+      <div style="margin-top:16px;font-size:11px;color:#555;">v5.2</div>
     </div>
   </div>
 
@@ -672,9 +672,18 @@
         };
         saveSession(session);
         saved = true;
-        alert('[디버그] 저장 완료! ' + taskName + ' / ' + formatShort(elapsed));
+
+        // 디버그: 저장 직후 바로 읽어보기
+        const verifyKey = KEYS.daily(sessionStart.split('T')[0]);
+        const verifyRaw = localStorage.getItem(verifyKey);
+        const verifyRec = JSON.parse(verifyRaw);
+        alert('[디버그] 저장 완료!\n' + taskName + ' / ' + formatShort(elapsed) +
+          '\n\n검증 - key: ' + verifyKey +
+          '\n세션수: ' + verifyRec.sessions.length +
+          '\ntotalMs: ' + verifyRec.totalDurationMs +
+          '\n\ntodayStr(): ' + todayStr());
       } else {
-        alert('[디버그] 저장 안됨! elapsed=' + elapsed + ', sessionStart=' + sessionStart);
+        alert('[디버그] 저장 안됨!\nelapsed=' + elapsed + '\nsessionStart=' + sessionStart);
       }
 
       // 그 다음 상태 초기화
@@ -685,6 +694,14 @@
       updateUI();
       updateTodayScreen();
       updateHistoryScreen();
+
+      // 디버그: updateMiniTotal 이후 최종 확인
+      if (saved) {
+        const finalRec = getTodayRecord();
+        alert('[디버그] 최종 화면 업데이트 후\n오늘 세션수: ' + finalRec.sessions.length +
+          '\n오늘 totalMs: ' + finalRec.totalDurationMs +
+          '\nminiTotal 표시: ' + miniTotal.textContent);
+      }
     }
 
     function startTick() {
