@@ -240,6 +240,107 @@
     /* ===== History Screen ===== */
     .history-screen { padding: 16px 0; }
 
+    .stats-toggle {
+      display: flex;
+      margin: 0 20px 16px;
+      background: var(--bg-secondary);
+      border-radius: 10px;
+      padding: 3px;
+      border: 1px solid var(--border);
+    }
+    .stats-toggle button {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 8px;
+      background: none;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .stats-toggle button.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .stats-summary {
+      display: flex;
+      gap: 10px;
+      margin: 0 20px 16px;
+    }
+    .stat-card {
+      flex: 1;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+    }
+    .stat-card .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+    .stat-card .stat-value { font-size: 20px; font-weight: 700; color: var(--accent); }
+    .stat-card .stat-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+    .chart-container {
+      margin: 0 20px 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 12px 12px;
+    }
+    .chart-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      padding-left: 4px;
+    }
+    .chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 120px;
+      padding-bottom: 24px;
+      position: relative;
+    }
+    .chart-bar-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .chart-bar {
+      width: 100%;
+      max-width: 32px;
+      border-radius: 6px 6px 2px 2px;
+      background: var(--accent);
+      min-height: 2px;
+      transition: height 0.3s ease;
+      position: relative;
+    }
+    .chart-bar.today-bar { background: var(--running); }
+    .chart-bar-value {
+      font-size: 9px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+      white-space: nowrap;
+    }
+    .chart-bar-label {
+      font-size: 10px;
+      color: var(--text-secondary);
+      margin-top: 6px;
+    }
+
+    .history-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      padding: 8px 24px 12px;
+    }
+
     .date-header {
       display: flex;
       justify-content: space-between;
@@ -323,6 +424,34 @@
   <!-- History Screen -->
   <div id="screen-history" class="screen">
     <div class="history-screen">
+      <!-- 주간/월간 토글 -->
+      <div class="stats-toggle">
+        <button id="toggleWeek" class="active" onclick="setStatsView('week')">이번 주</button>
+        <button id="toggleMonth" onclick="setStatsView('month')">이번 달</button>
+      </div>
+
+      <!-- 통계 카드 -->
+      <div class="stats-summary">
+        <div class="stat-card">
+          <div class="stat-label" id="statPeriodLabel">이번 주 총</div>
+          <div class="stat-value" id="statTotal">0분</div>
+          <div class="stat-sub" id="statDays">0일 공부</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">일 평균</div>
+          <div class="stat-value" id="statAvg">0분</div>
+          <div class="stat-sub" id="statSessions">0개 세션</div>
+        </div>
+      </div>
+
+      <!-- 막대 그래프 -->
+      <div class="chart-container">
+        <div class="chart-title" id="chartTitle">일별 공부 시간</div>
+        <div class="chart" id="chartBars"></div>
+      </div>
+
+      <!-- 날짜별 기록 -->
+      <div class="history-section-title" id="historyDetailTitle">상세 기록</div>
       <div id="historyList"></div>
       <div id="historyEmpty" class="empty-state" style="display:none">
         <div class="icon">📅</div>
@@ -598,16 +727,113 @@
       }
     }
 
+    // ===== Stats & Chart =====
+    let currentStatsView = 'week';
+
+    function setStatsView(view) {
+      currentStatsView = view;
+      $('toggleWeek').classList.toggle('active', view === 'week');
+      $('toggleMonth').classList.toggle('active', view === 'month');
+      updateHistoryScreen();
+    }
+
+    function getDateRange(view) {
+      const today = new Date();
+      const dates = [];
+      if (view === 'week') {
+        const day = today.getDay(); // 0=일 1=월...
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(monday);
+          d.setDate(monday.getDate() + i);
+          dates.push(formatDateStr(d));
+        }
+      } else {
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        for (let i = 1; i <= daysInMonth; i++) {
+          dates.push(formatDateStr(new Date(year, month, i)));
+        }
+      }
+      return dates;
+    }
+
+    function formatDateStr(d) {
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    }
+
+    function getShortLabel(dateStr, view) {
+      const d = new Date(dateStr + 'T00:00:00');
+      if (view === 'week') {
+        return ['일','월','화','수','목','금','토'][d.getDay()];
+      }
+      return d.getDate().toString();
+    }
+
+    function formatHours(ms) {
+      const h = ms / 3600000;
+      if (h >= 1) return h.toFixed(1) + 'h';
+      const m = Math.floor(ms / 60000);
+      return m + 'm';
+    }
+
     function updateHistoryScreen() {
-      const dates = load(KEYS.ALL_DATES) || [];
-      if (dates.length === 0) {
+      const allDates = load(KEYS.ALL_DATES) || [];
+      const rangeDates = getDateRange(currentStatsView);
+      const todayDate = todayStr();
+
+      // 기간 내 데이터 수집
+      let totalMs = 0;
+      let totalSessions = 0;
+      let studyDays = 0;
+      const dailyData = [];
+
+      for (const date of rangeDates) {
+        const rec = load(KEYS.daily(date));
+        const ms = rec ? rec.totalDurationMs : 0;
+        const sessions = rec ? rec.sessions.length : 0;
+        dailyData.push({ date, ms, sessions });
+        totalMs += ms;
+        totalSessions += sessions;
+        if (ms > 0) studyDays++;
+      }
+
+      // 통계 카드 업데이트
+      $('statPeriodLabel').textContent = currentStatsView === 'week' ? '이번 주 총' : '이번 달 총';
+      $('statTotal').textContent = totalMs > 0 ? formatShort(totalMs) : '0분';
+      $('statDays').textContent = `${studyDays}일 공부`;
+      $('statAvg').textContent = studyDays > 0 ? formatShort(Math.floor(totalMs / studyDays)) : '0분';
+      $('statSessions').textContent = `${totalSessions}개 세션`;
+
+      // 막대 그래프
+      const maxMs = Math.max(...dailyData.map(d => d.ms), 1);
+      let chartHtml = '';
+      for (const d of dailyData) {
+        const heightPct = (d.ms / maxMs) * 100;
+        const isToday = d.date === todayDate;
+        const valueLabel = d.ms > 0 ? formatHours(d.ms) : '';
+        chartHtml += `<div class="chart-bar-wrap">
+          <div class="chart-bar-value">${valueLabel}</div>
+          <div class="chart-bar ${isToday ? 'today-bar' : ''}" style="height: ${Math.max(heightPct, d.ms > 0 ? 3 : 0)}%"></div>
+          <div class="chart-bar-label">${getShortLabel(d.date, currentStatsView)}</div>
+        </div>`;
+      }
+      $('chartBars').innerHTML = chartHtml;
+      $('chartTitle').textContent = currentStatsView === 'week' ? '일별 공부 시간 (이번 주)' : '일별 공부 시간 (이번 달)';
+
+      // 상세 기록 (날짜별)
+      if (allDates.length === 0) {
         $('historyList').innerHTML = '';
         $('historyEmpty').style.display = '';
+        $('historyDetailTitle').style.display = 'none';
         return;
       }
       $('historyEmpty').style.display = 'none';
+      $('historyDetailTitle').style.display = '';
       let html = '';
-      for (const date of dates) {
+      for (const date of allDates) {
         const rec = load(KEYS.daily(date));
         if (!rec || rec.sessions.length === 0) continue;
         html += `<div class="date-header">
