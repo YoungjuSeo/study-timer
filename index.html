@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="공부 타이머">
+  <meta name="theme-color" content="#0F0F1A">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <title>공부 타이머</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg-primary: #0F0F1A;
+      --bg-secondary: #1A1A2E;
+      --bg-tertiary: #16213E;
+      --accent: #6C63FF;
+      --accent-light: #8B83FF;
+      --running: #00C9A7;
+      --paused: #FFB800;
+      --stopped: #FF6B6B;
+      --text-primary: #E8E8E8;
+      --text-secondary: #A0A0B0;
+      --border: #2A2A40;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ===== Tab Screens ===== */
+    .screen {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      overflow-y: auto;
+      padding-top: calc(var(--safe-top) + 12px);
+      padding-bottom: 100px;
+    }
+    .screen.active { display: flex; }
+
+    /* ===== Tab Bar ===== */
+    .tab-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      padding-bottom: var(--safe-bottom);
+      z-index: 100;
+    }
+    .tab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 0 8px;
+      color: var(--text-secondary);
+      font-size: 11px;
+      cursor: pointer;
+      transition: color 0.2s;
+      border: none;
+      background: none;
+    }
+    .tab.active { color: var(--accent); }
+    .tab svg { width: 24px; height: 24px; margin-bottom: 2px; }
+
+    /* ===== Timer Screen ===== */
+    .timer-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 24px;
+    }
+
+    .task-input {
+      width: 100%;
+      max-width: 340px;
+      font-size: 18px;
+      color: var(--text-primary);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 20px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .task-input:focus { border-color: var(--accent); }
+    .task-input::placeholder { color: var(--text-secondary); }
+
+    .task-label {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .timer-display {
+      font-size: 64px;
+      font-weight: 300;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 2px;
+      margin: 28px 0;
+      transition: color 0.3s;
+    }
+    .timer-display.running { color: var(--running); }
+    .timer-display.paused { color: var(--paused); animation: pulse 1.5s ease-in-out infinite; }
+    .timer-display.idle { color: var(--text-primary); opacity: 0.4; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .paused-label {
+      font-size: 14px;
+      color: var(--paused);
+      font-weight: 500;
+      margin-top: -16px;
+      margin-bottom: 16px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 32px;
+      border-radius: 14px;
+      border: none;
+      font-size: 17px;
+      font-weight: 600;
+      color: #fff;
+      cursor: pointer;
+      min-width: 130px;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn:disabled { opacity: 0.35; cursor: default; }
+    .btn-start { background: var(--accent); min-width: 180px; }
+    .btn-pause { background: var(--paused); }
+    .btn-resume { background: var(--running); }
+    .btn-stop { background: var(--stopped); }
+
+    .daily-banner {
+      width: 100%;
+      max-width: 340px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 32px;
+    }
+    .daily-banner .label { font-size: 14px; color: var(--text-secondary); }
+    .daily-banner .value { font-size: 16px; font-weight: 700; color: var(--accent); }
+
+    /* ===== Today Screen ===== */
+    .today-screen { padding: 16px 0; }
+
+    .total-banner-large {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin: 0 20px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .total-banner-large .label { font-size: 17px; color: var(--text-secondary); }
+    .total-banner-large .value { font-size: 24px; font-weight: 700; color: var(--accent); }
+
+    .section-title {
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      padding: 4px 24px 12px;
+    }
+
+    .session-card {
+      display: flex;
+      align-items: center;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin: 0 20px 8px;
+    }
+    .session-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    .session-icon svg { width: 18px; height: 18px; color: var(--accent); }
+    .session-info { flex: 1; }
+    .session-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+    .session-time { font-size: 12px; color: var(--text-secondary); }
+    .session-duration { font-size: 15px; font-weight: 700; color: var(--accent); margin-left: 12px; }
+
+    .empty-state {
+      text-align: center;
+      padding-top: 60px;
+      color: var(--text-secondary);
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+    .empty-state .msg { font-size: 16px; margin-bottom: 4px; }
+    .empty-state .sub { font-size: 13px; opacity: 0.7; }
+
+    /* ===== History Screen ===== */
+    .history-screen { padding: 16px 0; }
+
+    .date-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px 10px;
+    }
+    .date-header .date { font-size: 16px; font-weight: 700; }
+    .date-header .total { font-size: 14px; font-weight: 600; color: var(--accent); }
+
+    /* ===== Delete button ===== */
+    .session-card-wrapper {
+      position: relative;
+    }
+    .delete-btn {
+      position: absolute;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--stopped);
+      border: none;
+      color: #fff;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Timer Screen -->
+  <div id="screen-timer" class="screen active">
+    <div class="timer-screen">
+      <div id="task-input-area">
+        <input type="text" id="taskInput" class="task-input" placeholder="무엇을 공부할까요?" autocomplete="off">
+      </div>
+      <div id="task-label-area" style="display:none">
+        <div class="task-label" id="taskLabel"></div>
+      </div>
+
+      <div id="timerDisplay" class="timer-display idle">00:00:00</div>
+      <div id="pausedLabel" class="paused-label" style="display:none">일시정지</div>
+
+      <div class="controls" id="controls-idle">
+        <button class="btn btn-start" id="btnStart" disabled>▶ 시작</button>
+      </div>
+      <div class="controls" id="controls-running" style="display:none">
+        <button class="btn btn-pause" id="btnPause">⏸ 일시정지</button>
+        <button class="btn btn-stop" id="btnStop1">⏹ 종료</button>
+      </div>
+      <div class="controls" id="controls-paused" style="display:none">
+        <button class="btn btn-resume" id="btnResume">▶ 재개</button>
+        <button class="btn btn-stop" id="btnStop2">⏹ 종료</button>
+      </div>
+
+      <div class="daily-banner">
+        <span class="label">오늘 총 공부</span>
+        <span class="value" id="miniTotal">0분</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Today Screen -->
+  <div id="screen-today" class="screen">
+    <div class="today-screen">
+      <div class="total-banner-large">
+        <span class="label">오늘 총 공부</span>
+        <span class="value" id="todayTotal">0분</span>
+      </div>
+      <div id="todaySessionCount" class="section-title"></div>
+      <div id="todayList"></div>
+      <div id="todayEmpty" class="empty-state" style="display:none">
+        <div class="icon">📚</div>
+        <div class="msg">아직 기록이 없어요</div>
+        <div class="sub">타이머를 시작해보세요!</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Screen -->
+  <div id="screen-history" class="screen">
+    <div class="history-screen">
+      <div id="historyList"></div>
+      <div id="historyEmpty" class="empty-state" style="display:none">
+        <div class="icon">📅</div>
+        <div class="msg">기록이 없어요</div>
+        <div class="sub">공부를 시작하면 여기에 기록됩니다</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Bar -->
+  <nav class="tab-bar">
+    <button class="tab active" data-screen="timer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+      타이머
+    </button>
+    <button class="tab" data-screen="today">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>
+      </svg>
+      오늘
+    </button>
+    <button class="tab" data-screen="history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      기록
+    </button>
+  </nav>
+
+  <script>
+    // ===== Storage =====
+    const KEYS = {
+      TIMER: 'study_timer_state',
+      daily: (d) => `study_daily_${d}`,
+      ALL_DATES: 'study_all_dates',
+    };
+
+    function save(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+    function load(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
+
+    // ===== Time Utils =====
+    function pad(n) { return n.toString().padStart(2, '0'); }
+    function formatDuration(ms) {
+      const s = Math.floor(ms / 1000);
+      return `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
+    }
+    function formatShort(ms) {
+      const m = Math.floor(ms / 60000);
+      const h = Math.floor(m / 60);
+      const rm = m % 60;
+      if (h > 0) return `${h}시간 ${rm}분`;
+      return `${m}분`;
+    }
+    function formatTime(iso) {
+      const d = new Date(iso);
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+    function todayStr() {
+      const d = new Date();
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    }
+    function formatDateHeader(ds) {
+      const d = new Date(ds + 'T00:00:00');
+      const weekdays = ['일','월','화','수','목','금','토'];
+      return `${d.getMonth()+1}월 ${d.getDate()}일 (${weekdays[d.getDay()]})`;
+    }
+
+    // ===== State =====
+    const DEFAULT_STATE = { status: 'idle', taskName: '', segmentStartedAt: null, accumulatedMs: 0, sessionStartedAt: null };
+    let state = load(KEYS.TIMER) || { ...DEFAULT_STATE };
+    let tickInterval = null;
+
+    // ===== DOM =====
+    const $ = (id) => document.getElementById(id);
+    const taskInput = $('taskInput');
+    const taskInputArea = $('task-input-area');
+    const taskLabelArea = $('task-label-area');
+    const taskLabel = $('taskLabel');
+    const timerDisplay = $('timerDisplay');
+    const pausedLabel = $('pausedLabel');
+    const controlsIdle = $('controls-idle');
+    const controlsRunning = $('controls-running');
+    const controlsPaused = $('controls-paused');
+    const btnStart = $('btnStart');
+    const miniTotal = $('miniTotal');
+
+    // ===== Timer Logic =====
+    function computeElapsed() {
+      if (state.status === 'running' && state.segmentStartedAt) {
+        return state.accumulatedMs + (Date.now() - new Date(state.segmentStartedAt).getTime());
+      }
+      return state.accumulatedMs;
+    }
+
+    function persistState() { save(KEYS.TIMER, state); }
+
+    function startTimer() {
+      const name = taskInput.value.trim();
+      if (!name) return;
+      const now = new Date().toISOString();
+      state = { status: 'running', taskName: name, segmentStartedAt: now, accumulatedMs: 0, sessionStartedAt: now };
+      persistState();
+      updateUI();
+      startTick();
+    }
+
+    function pauseTimer() {
+      state.accumulatedMs = computeElapsed();
+      state.status = 'paused';
+      state.segmentStartedAt = null;
+      persistState();
+      stopTick();
+      updateUI();
+    }
+
+    function resumeTimer() {
+      state.status = 'running';
+      state.segmentStartedAt = new Date().toISOString();
+      persistState();
+      updateUI();
+      startTick();
+    }
+
+    function stopTimer() {
+      const elapsed = computeElapsed();
+      if (elapsed > 0 && state.sessionStartedAt) {
+        const session = {
+          id: Date.now().toString(),
+          taskName: state.taskName,
+          startedAt: state.sessionStartedAt,
+          endedAt: new Date().toISOString(),
+          durationMs: elapsed,
+        };
+        saveSession(session);
+      }
+      state = { ...DEFAULT_STATE };
+      persistState();
+      stopTick();
+      taskInput.value = '';
+      updateUI();
+    }
+
+    function startTick() {
+      stopTick();
+      tickInterval = setInterval(() => {
+        timerDisplay.textContent = formatDuration(computeElapsed());
+        updateMiniTotal();
+      }, 100);
+    }
+
+    function stopTick() {
+      if (tickInterval) { clearInterval(tickInterval); tickInterval = null; }
+    }
+
+    // ===== Session Storage =====
+    function saveSession(session) {
+      const date = session.startedAt.split('T')[0];
+      const key = KEYS.daily(date);
+      const record = load(key) || { date, sessions: [], totalDurationMs: 0 };
+      record.sessions.push(session);
+      record.totalDurationMs += session.durationMs;
+      save(key, record);
+
+      const dates = load(KEYS.ALL_DATES) || [];
+      if (!dates.includes(date)) {
+        dates.push(date);
+        dates.sort().reverse();
+        save(KEYS.ALL_DATES, dates);
+      }
+    }
+
+    function getTodayRecord() {
+      return load(KEYS.daily(todayStr())) || { date: todayStr(), sessions: [], totalDurationMs: 0 };
+    }
+
+    function deleteSession(date, sessionId) {
+      const key = KEYS.daily(date);
+      const record = load(key);
+      if (!record) return;
+
+      const idx = record.sessions.findIndex(s => s.id === sessionId);
+      if (idx === -1) return;
+
+      record.totalDurationMs -= record.sessions[idx].durationMs;
+      record.sessions.splice(idx, 1);
+
+      if (record.sessions.length === 0) {
+        localStorage.removeItem(key);
+        const dates = (load(KEYS.ALL_DATES) || []).filter(d => d !== date);
+        save(KEYS.ALL_DATES, dates);
+      } else {
+        save(key, record);
+      }
+    }
+
+    // ===== UI Update =====
+    function updateUI() {
+      // Timer screen
+      if (state.status === 'idle') {
+        taskInputArea.style.display = '';
+        taskLabelArea.style.display = 'none';
+        timerDisplay.className = 'timer-display idle';
+        timerDisplay.textContent = '00:00:00';
+        pausedLabel.style.display = 'none';
+        controlsIdle.style.display = 'flex';
+        controlsRunning.style.display = 'none';
+        controlsPaused.style.display = 'none';
+      } else if (state.status === 'running') {
+        taskInputArea.style.display = 'none';
+        taskLabelArea.style.display = '';
+        taskLabel.textContent = state.taskName;
+        timerDisplay.className = 'timer-display running';
+        timerDisplay.textContent = formatDuration(computeElapsed());
+        pausedLabel.style.display = 'none';
+        controlsIdle.style.display = 'none';
+        controlsRunning.style.display = 'flex';
+        controlsPaused.style.display = 'none';
+      } else {
+        taskInputArea.style.display = 'none';
+        taskLabelArea.style.display = '';
+        taskLabel.textContent = state.taskName;
+        timerDisplay.className = 'timer-display paused';
+        timerDisplay.textContent = formatDuration(computeElapsed());
+        pausedLabel.style.display = '';
+        controlsIdle.style.display = 'none';
+        controlsRunning.style.display = 'none';
+        controlsPaused.style.display = 'flex';
+      }
+      updateMiniTotal();
+    }
+
+    function updateMiniTotal() {
+      const rec = getTodayRecord();
+      let total = rec.totalDurationMs;
+      if (state.status !== 'idle') total += computeElapsed();
+      miniTotal.textContent = total > 0 ? formatShort(total) : '0분';
+    }
+
+    function renderSessionCard(session) {
+      return `<div class="session-card" data-id="${session.id}">
+        <div class="session-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        </div>
+        <div class="session-info">
+          <div class="session-name">${session.taskName}</div>
+          <div class="session-time">${formatTime(session.startedAt)} - ${formatTime(session.endedAt)}</div>
+        </div>
+        <div class="session-duration">${formatShort(session.durationMs)}</div>
+      </div>`;
+    }
+
+    function updateTodayScreen() {
+      const rec = getTodayRecord();
+      let total = rec.totalDurationMs;
+      if (state.status !== 'idle') total += computeElapsed();
+      $('todayTotal').textContent = total > 0 ? formatShort(total) : '0분';
+
+      const sessions = [...rec.sessions].reverse();
+      if (sessions.length === 0) {
+        $('todaySessionCount').textContent = '';
+        $('todayList').innerHTML = '';
+        $('todayEmpty').style.display = '';
+      } else {
+        $('todaySessionCount').textContent = `오늘의 세션 (${sessions.length}개)`;
+        $('todayList').innerHTML = sessions.map(renderSessionCard).join('');
+        $('todayEmpty').style.display = 'none';
+      }
+    }
+
+    function updateHistoryScreen() {
+      const dates = load(KEYS.ALL_DATES) || [];
+      if (dates.length === 0) {
+        $('historyList').innerHTML = '';
+        $('historyEmpty').style.display = '';
+        return;
+      }
+      $('historyEmpty').style.display = 'none';
+      let html = '';
+      for (const date of dates) {
+        const rec = load(KEYS.daily(date));
+        if (!rec || rec.sessions.length === 0) continue;
+        html += `<div class="date-header">
+          <span class="date">${formatDateHeader(date)}</span>
+          <span class="total">${formatShort(rec.totalDurationMs)}</span>
+        </div>`;
+        const sessions = [...rec.sessions].reverse();
+        html += sessions.map(renderSessionCard).join('');
+      }
+      $('historyList').innerHTML = html;
+    }
+
+    // ===== Tab Navigation =====
+    const tabs = document.querySelectorAll('.tab');
+    const screens = document.querySelectorAll('.screen');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.screen;
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        screens.forEach(s => s.classList.remove('active'));
+        $(`screen-${target}`).classList.add('active');
+
+        if (target === 'today') updateTodayScreen();
+        if (target === 'history') updateHistoryScreen();
+      });
+    });
+
+    // ===== Event Listeners =====
+    taskInput.addEventListener('input', () => {
+      btnStart.disabled = !taskInput.value.trim();
+    });
+    taskInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && taskInput.value.trim()) startTimer();
+    });
+    btnStart.addEventListener('click', startTimer);
+    $('btnPause').addEventListener('click', pauseTimer);
+    $('btnResume').addEventListener('click', resumeTimer);
+    $('btnStop1').addEventListener('click', stopTimer);
+    $('btnStop2').addEventListener('click', stopTimer);
+
+    // ===== Visibility Change (background/foreground) =====
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && state.status === 'running') {
+        timerDisplay.textContent = formatDuration(computeElapsed());
+        updateMiniTotal();
+      }
+    });
+
+    // ===== Init =====
+    if (state.status !== 'idle') {
+      taskInput.value = state.taskName;
+    }
+    updateUI();
+    if (state.status === 'running') startTick();
+
+    // Service Worker registration
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
